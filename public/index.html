@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DealPilot Close</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@36.3.0/dist/ag-grid-community.min.js"></script>
+<style>
+  :root{--navy:#00174A;--blue:#1576E6;--bg:#F4F7FC;--card:#fff;--ink:#1D2A44;--mut:#5B6B86;--line:#E1E8F3;--ok:#14915F;--warn:#C77A00;--bad:#C0392B;--pp:#003087}
+  *{box-sizing:border-box} body{margin:0;font-family:Inter,"Noto Sans TC","Noto Sans JP","Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header h1{font-size:20px;margin:0;font-weight:800} header .sub{color:#BFD4F2;font-size:13px}
+  .badge{font-size:12px;padding:4px 10px;border-radius:99px;background:#0E2A66;color:#D6E4FA}
+  .badge.on{background:#14915F;color:#fff} .sample{background:#F5A524;color:#00174A;font-weight:700}
+  main{display:grid;grid-template-columns:320px 1fr;gap:16px;padding:16px 24px;max-width:1400px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .inbox .item{padding:12px;border-radius:10px;cursor:pointer;border:1px solid transparent;margin-bottom:6px}
+  .inbox .item:hover{background:var(--bg)} .inbox .item.sel{border-color:var(--blue);background:#EEF5FF}
+  .item b{display:block;font-size:14px} .item small{color:var(--mut)} .stage{font-size:11px;font-weight:700;color:var(--blue)}
+  h2{font-size:15px;margin:0 0 10px;color:var(--navy)} h3{font-size:13px;margin:16px 0 6px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+  .orig{white-space:pre-wrap;background:var(--bg);padding:12px;border-radius:10px;font-size:14px;line-height:1.6}
+  .kv{display:grid;grid-template-columns:repeat(4,1fr);gap:8px} .kv div{background:var(--bg);border-radius:10px;padding:10px} .kv span{display:block;font-size:11px;color:var(--mut)} .kv strong{font-size:15px}
+  table.items{width:100%;border-collapse:collapse;font-size:14px} table.items td,table.items th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+  textarea{width:100%;min-height:150px;font:inherit;font-size:14px;padding:10px;border:1px solid var(--line);border-radius:10px}
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  button{font:inherit;font-weight:600;font-size:14px;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;background:var(--blue);color:#fff}
+  button.pp{background:var(--pp)} button.ghost{background:#E6EEF9;color:var(--navy)} button:disabled{opacity:.4;cursor:default}
+  .status{font-size:13px;color:var(--mut);margin-top:8px} .err{color:var(--bad)}
+  .log{font-size:13px;color:var(--mut);max-height:160px;overflow:auto} .log div{padding:4px 0;border-bottom:1px dashed var(--line)}
+  #grid{height:260px;margin-top:8px}
+  .pipe{grid-column:1/-1}
+  a{color:var(--blue)}
+  @media (max-width:900px){main{grid-template-columns:1fr}.kv{grid-template-columns:1fr 1fr}}
+</style></head>
+<body>
+<header>
+  <div><h1>DealPilot Close</h1><div class="sub">From buyer reply to paid order — AI agent + PayPal, with a human in the loop</div></div>
+  <span class="badge sample">SAMPLE DATA · fictional companies</span>
+  <span class="badge" id="m-ai"></span><span class="badge" id="m-pp"></span>
+  <span style="flex:1"></span><button class="ghost" onclick="resetAll()">Reset demo</button>
+</header>
+<main>
+  <section class="card inbox"><h2>Buyer replies</h2><div id="inbox"></div></section>
+  <section class="card" id="detail"><p class="status">Select a reply on the left.</p></section>
+  <section class="card pipe"><h2>Pipeline</h2><div id="grid"></div></section>
+</main>
+<script>
+let S = null, sel = null, grid = null, busy = false;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+async function api(p, body) {
+  const r = await fetch(p, { method: body === undefined ? "GET" : "POST", headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.error || r.statusText); return j;
+}
+async function load() {
+  S = await api("/api/state");
+  $("#m-ai").textContent = S.modes.ai === "claude" ? "AI: " + S.model : "AI: demo mode (no API key)";
+  $("#m-ai").className = "badge" + (S.modes.ai === "claude" ? " on" : "");
+  $("#m-pp").textContent = S.modes.paypal === "sandbox" ? "PayPal: Sandbox" : "PayPal: simulated (no sandbox keys)";
+  $("#m-pp").className = "badge" + (S.modes.paypal === "sandbox" ? " on" : "");
+  $("#inbox").innerHTML = S.replies.map((r) => {
+    const d = S.deals[r.id];
+    return `<div class="item ${sel === r.id ? "sel" : ""}" onclick="pick('${r.id}')"><span class="stage">${esc(d?.stage || "New reply")}</span><b>${esc(r.from_company)}</b><small>${esc(r.country)} · ${esc(r.subject)}</small></div>`;
+  }).join("");
+  renderGrid(); if (sel) renderDetail();
+}
+function pick(id) { sel = id; load(); }
+async function act(path, body) {
+  if (busy) return; busy = true; $("#st") && ($("#st").textContent = "Working…");
+  try { await api(`/api/deals/${sel}/${path}`, body ?? {}); await load(); }
+  catch (e) { await load(); $("#st").innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  finally { busy = false; }
+}
+function renderDetail() {
+  const r = S.replies.find((x) => x.id === sel), d = S.deals[sel] || {}, a = d.analysis;
+  const doc = d.invoice ? `Invoice ${esc(d.invoice.number)} · ${esc(d.invoice.status)}` : d.order ? `Payment link · ${esc(d.order.status)}` : "—";
+  const link = d.invoice?.payer_link?.startsWith("http") ? d.invoice.payer_link : d.order?.approve_url;
+  const can = { analyze: !busy, prepare: a && a.items.length && !d.invoice && !d.order,
+    approve: a && a.recommended_action !== "stop" && !d.approved_at, track: d.approved_at && (d.invoice || d.order) && d.stage !== "Won" };
+  $("#detail").innerHTML = `
+    <h2>${esc(r.from_name)} · ${esc(r.from_company)} <small style="color:var(--mut)">${esc(r.from_email)}</small></h2>
+    <div class="orig">${esc(r.body)}</div>
+    ${a ? `<h3>AI reading</h3>
+    <div class="kv"><div><span>Language</span><strong>${esc(a.language)}</strong></div><div><span>Intent</span><strong>${esc(a.intent)}</strong></div>
+      <div><span>Buying signal</span><strong>${a.buying_signal}/100</strong></div><div><span>Next step</span><strong>${esc(a.recommended_action)}</strong></div></div>
+    <p class="status">${esc(a.summary_en)} — ${esc(a.reasoning_en)}</p>
+    ${a.items.length ? `<table class="items"><tr><th>SKU</th><th>Item</th><th>Qty</th><th>Unit (${esc(a.currency)})</th><th>Line</th></tr>
+      ${a.items.map((i) => `<tr><td>${esc(i.sku)}</td><td>${esc(i.name)}</td><td>${i.quantity}</td><td>${i.unit_price}</td><td>${(i.quantity * i.unit_price).toFixed(2)}</td></tr>`).join("")}
+      <tr><td colspan="4"><b>Total</b></td><td><b>${d.total} ${esc(a.currency)}</b></td></tr></table>
+      <p class="status">Prices from the sample catalog, converted with sample FX rates.</p>` : ""}
+    <h3>Reply draft (${esc(a.language)}) — sent only after you approve</h3>
+    <textarea id="reply">${esc(a.reply_subject)}\n\n${esc(a.reply_body)}</textarea>` : ""}
+    <h3>PayPal</h3><p class="status">${doc} ${link ? `· <a href="${esc(link)}" target="_blank">open payer link</a>` : ""}</p>
+    ${d.followup ? `<h3>AI payment reminder (${esc(a.language)})</h3><textarea>${esc(d.followup.subject)}\n\n${esc(d.followup.body)}</textarea>` : ""}
+    <div class="steps">
+      <button onclick="act('analyze')" ${can.analyze ? "" : "disabled"}>1 · Read reply with AI</button>
+      <button class="pp" onclick="act('prepare',{kind:'invoice'})" ${can.prepare ? "" : "disabled"}>2 · Draft PayPal invoice</button>
+      <button class="pp" onclick="act('prepare',{kind:'payment_link'})" ${can.prepare ? "" : "disabled"}>2 · Create payment link</button>
+      <button onclick="act('approve')" ${can.approve ? "" : "disabled"}>3 · Approve &amp; send</button>
+      <button class="ghost" onclick="act('refresh')" ${can.track ? "" : "disabled"}>4 · Check payment</button>
+      <button class="ghost" onclick="act('followup')" ${can.track ? "" : "disabled"}>4 · Draft reminder</button>
+      <button class="ghost" onclick="act('simulate-payment')" ${can.track ? "" : "disabled"}>Sandbox: record payment</button>
+    </div>
+    <p class="status" id="st"></p>
+    ${d.activity?.length ? `<h3>Agent activity</h3><div class="log">${d.activity.map((x) => `<div>${new Date(x.at).toLocaleTimeString()} — ${esc(x.msg)}</div>`).join("")}</div>` : ""}`;
+}
+function renderGrid() {
+  const rows = S.replies.map((r) => { const d = S.deals[r.id] || {}, a = d.analysis || {};
+    return { company: r.from_company, country: r.country, language: a.language || "", intent: a.intent || "", signal: a.buying_signal ?? null,
+      amount: d.total ?? null, currency: a.currency || "", paypal: d.invoice ? "Invoice " + (d.invoice.number || "") : d.order ? "Payment link" : "",
+      status: d.invoice?.status || d.order?.status || "", stage: d.stage || "New reply" }; });
+  if (!grid) {
+    grid = agGrid.createGrid($("#grid"), {
+      rowData: rows, defaultColDef: { sortable: true, filter: true, resizable: true, flex: 1 },
+      columnDefs: [{ field: "company", flex: 2 }, { field: "country" }, { field: "language" }, { field: "intent" },
+        { field: "signal", headerName: "Signal" }, { field: "amount" }, { field: "currency" }, { field: "paypal", headerName: "PayPal doc" },
+        { field: "status", headerName: "PayPal status" },
+        { field: "stage", cellStyle: (p) => ({ fontWeight: 700, color: p.value === "Won" ? "#14915F" : p.value?.startsWith("Closed") ? "#C0392B" : "#1576E6" }) }],
+      onRowClicked: (e) => pick(S.replies.find((r) => r.from_company === e.data.company).id),
+    });
+  } else grid.setGridOption("rowData", rows);
+}
+async function resetAll() { if (!confirm("Reset all demo deals?")) return; await api("/api/reset", {}); sel = null; $("#detail").innerHTML = '<p class="status">Select a reply on the left.</p>'; load(); }
+load();
+</script>
+</body></html>

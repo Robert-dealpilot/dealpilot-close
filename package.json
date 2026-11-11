@@ -1,0 +1,18 @@
+{
+  "name": "dealpilot-close",
+  "version": "0.1.0",
+  "description": "AI agent that turns cross-border B2B buyer replies into PayPal invoices, payment links and follow-ups (PayPal AI Hackathon 2026 demo).",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node scripts/smoke.js"
+  },
+  "engines": { "node": ">=20" },
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.7.0",
+    "dotenv": "18.0.10",
+    "express": "5.3.0"
+  }
+}

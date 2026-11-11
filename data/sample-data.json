@@ -1,0 +1,66 @@
+{
+  "_note": "SAMPLE DATA — every company, person and email below is fictional.",
+  "seller": {
+    "name": "Formosa Precision Tools Co. (sample)",
+    "country": "Taiwan",
+    "catalog": [
+      { "sku": "EM-6-AL", "name": "Carbide end mill 6mm (aluminium)", "unit_price_usd": 9.5 },
+      { "sku": "EM-10-ST", "name": "Carbide end mill 10mm (steel)", "unit_price_usd": 18.0 },
+      { "sku": "TH-BT40", "name": "BT40 tool holder", "unit_price_usd": 64.0 },
+      { "sku": "CL-ER32", "name": "ER32 collet set (18 pcs)", "unit_price_usd": 120.0 },
+      { "sku": "SAMPLE-KIT", "name": "Evaluation sample kit (5 end mills)", "unit_price_usd": 45.0 }
+    ]
+  },
+  "replies": [
+    {
+      "id": "r1",
+      "from_name": "Haruto Sato",
+      "from_company": "Sato Kogyo Machining (sample)",
+      "from_email": "h.sato@example.jp",
+      "country": "Japan",
+      "received_at": "2026-11-10T01:20:00Z",
+      "subject": "Re: 超硬エンドミルのご案内",
+      "body": "ご連絡ありがとうございます。弊社はアルミ部品の加工が中心で、6mmの超硬エンドミルに興味があります。まずはサンプルキットを1セット試したいのですが、請求書を円建てで送っていただけますか？問題なければ来月、6mmを200本発注する予定です。よろしくお願いいたします。"
+    },
+    {
+      "id": "r2",
+      "from_name": "Min-jun Park",
+      "from_company": "Hanbit Precision (sample)",
+      "from_email": "mj.park@example.kr",
+      "country": "Korea",
+      "received_at": "2026-11-09T23:05:00Z",
+      "subject": "Re: BT40 tool holders",
+      "body": "안녕하세요. BT40 툴홀더 20개를 시험 주문하고 싶습니다. 결제는 미국 달러로 가능할까요? 이번 주 안에 결제 링크를 보내주시면 바로 진행하겠습니다."
+    },
+    {
+      "id": "r3",
+      "from_name": "Chen Wei",
+      "from_company": "Hongda Mold Works (sample)",
+      "from_email": "chen.wei@example.com",
+      "country": "Malaysia",
+      "received_at": "2026-11-09T09:40:00Z",
+      "subject": "Re: ER32 collet sets",
+      "body": "您好，我們馬來西亞工廠想先下 ER32 夾頭組 5 套當作首單，可以開美元的發票嗎？付款條件希望是 10 天內。謝謝！"
+    },
+    {
+      "id": "r4",
+      "from_name": "Laura Becker",
+      "from_company": "Becker Werkzeugbau (sample)",
+      "from_email": "l.becker@example.de",
+      "country": "Germany",
+      "received_at": "2026-11-08T14:12:00Z",
+      "subject": "Re: Carbide end mills for steel",
+      "body": "Thanks for reaching out. We machine hardened steel moulds and are interested in your 10mm end mills. Could you send a quote and a sample invoice in EUR for 50 pieces as a pilot order? If quality is fine we usually order quarterly."
+    },
+    {
+      "id": "r5",
+      "from_name": "James Wright",
+      "from_company": "Wright Fabrication (sample)",
+      "from_email": "james@example.com",
+      "country": "United States",
+      "received_at": "2026-11-08T03:30:00Z",
+      "subject": "Re: Tooling from Taiwan",
+      "body": "Not interested at the moment, we just signed a 2-year contract with another supplier. Please remove us from your list."
+    }
+  ]
+}
